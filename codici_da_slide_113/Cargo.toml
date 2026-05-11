@@ -1,0 +1,6 @@
+[package]
+name = "codici_da_slide_113"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]

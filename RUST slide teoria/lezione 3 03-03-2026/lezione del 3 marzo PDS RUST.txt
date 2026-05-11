@@ -1,0 +1,104 @@
+lezione del 3 marzo PDS RUST
+
+riferimento e prestito
+
+regole borrow checker
+
+riferimento mutabile e riferimenti non mutabilie
+
+
+slide 26
+frase chiave
+	• non posso aggiornare il dato quando è ancora presente un riferimento immutabile
+
+assignmenet = aggiornamento
+
+tempo di vita ≠ scope
+
+scope: tempo in cui la variabile sta in memoria --> valgono le regole legate all'allocazione di una variabile nello stack. nell'esempio a slide 37 r non viene deallocata dallo stack; fino alla riga println, è la riga fino a cui sto usanto r, dopo non ci sono istruzioni che usano quella variabile. Quindi il compilatore analizza il tempo di vita, che corrisponde al range di istruzioni che va dalla dichiarazione della variabile all'ultima istruzione che fa uso di quella variabile. 
+
+let p1 = & (a + 2) // il compilatore crea una variabile temporanea a+2 nell'area di memoria ; p1 contiene l'indirizzo del risultato di a + 2
+
+let p = &mut 12 // p contiene l'indirizzo di memoria che contiene il valore 12, e p può mutare il valore dell'indirizzo. 
+
+------------------------------------------------------------------------------------------------
+
+slide 40
+
+box è uno smart pointer che punta ad una zona di memoria di dati di tipo T, un parametro di "tipo generico". 
+
+La programmazione generica si usa specificando in modo generico il modo del tipo --> T = "qualunque tipo". La variabile viene allocata nell'heap. 
+
+metodo costruttore: il metodo costruttore new permette di creare un'istanza di un Box e passo come parametro il valore inizializzato nel Box.
+
+let b = Box::new(v) // b è una variabile puntatore, e quindi il possessore del dato --> se copio il puntatore su un'altra variabile sto compiendo un'operazione di MOVIMENTO; essa cambia il possessore, quindi trasferisco il possesso da una variabile ad un'altra. La variabile originale, ovvero b, viene distrutta
+e non può essere più utilizzata, perchè deve esserci un solo possessore. 
+
+slide 44
+	• b, che risiede nello stack, contiene l'indirizzo della tupla che si trova nello heap.
+
+	• deallocando b con il tratto drop libero lo spazio dello heap. 
+
+TRATTI PIU' USATI
+la notazione {} significa "display" --> mi permette di visualizzare tipi elementari
+
+le notazione {:?} significa "tratto debug" --> mi permette di visualizzare qualunque tipo, anche non elementare, come box. 
+
+la notazione {:p} significa "tratto pointer" --> mi permette di vedere il tipo puntatore. 
+
+------------------------------------------------------------------------------------------------
+
+slide 49
+
+il chiamante inserisce il valore 5 nello stack (nella slide è stato omesso l'indirizzo di ritorno).
+
+let b = MakeBox(5) equivale a let b = r, ma r è una variabile locale: il chiamante copia in b il valore ritornato dalla funzione, per cui si ha un'operazione di MOVIMENTO, ovvero un trasferimento di possesso. Di conseguenza, la variabile che prima possedeva il dato viene distrutta, cioè non è più utilizzabile (NON È VERO CHE SPARISCE DALLA MEMORIA). 
+
+b.0 e b.1 serve per accedere rispettivamente al primo e al secondo elemento della tupla. 
+
+
+------------------------------------------------------------------------------------------------
+
+COPY E CLONE (slide 58, orario: 12:19)
+
+copy e clone sono due tratti e intervengono rispetto all'operazione di assegnazione. 
+
+copy è un'operazione bit a bit che copia il contenuto del dato. Alcuni tipi implementano il tratto copy e altri non implementano copy ma implementano clone. Chi implementa copy implemetna anche clone.
+
+se un tipo implementa il tratto clone ma non copy allora l'assegnazione con= determina il movimento. se un tipo implementa solo clone, l'assegnazione determina solo la copiatura del valore. 
+
+x e y implementano il tratto copy, perchè sono entrambi unsigned integer. 
+
+il tipo Vec non implementando il tratto copy e implementando clone, una volta che la assegno ad un'altra variabile la variabile che possedeva il tratto viene distrutta. 
+
+------------------------------------------------------------------------------------------------
+
+slide 59 
+
+il metodo. .clone() crea una variabile indipendente in profondità, che non ha legami su quella a cui ho applicato il metodo. Viene copiato tutto della variabile su cui è applicata, quindi anche il puntatore. Viene copiato anche il tipo.
+
+tratto: descrizione di un comportamento che elenca delle firme di metodi che possono avere un'implementazione predefinita; tuttavia, quando creiamo un tratto "custom" (personalizzata) si vuole rendere l'implementazione specifica per il tipo. 
+
+un tratto definisce le signature e potrebbe implementare una versione del metodo predefinita che può essere usata o reimplementata --> sovrascrittura del metodo predefinito.  
+
+------------------------------------------------------------------------------------------------
+
+slide 64
+
+gli oggetti omogenei di un array sono salvati nello stack. l'array ha sempre dimensione fissa e gli oggetti stanno nello stack
+
+------------------------------------------------------------------------------------------------
+
+slide 68  
+SLICE
+la variabile che detiene una slice deve conoscere l'indirizzo di memoria di partenza della slice e la dimensione della slice. Quindi il puntatore contiene due informazioni. 
+
+------------------------------------------------------------------------------------------------
+
+slide 72 (12:48)
+ALLOCAZIONE DI UN VETTORE NELL'HEAP
+un vec ha oggetti allocati nello heap e la sua dimensione è dinamica. La dimensione del vec può crescere nel tempo dinamicamente se serve, con la garanzia che lo spazio occupato è continuo. Se chiamo vec::new creo un vettore nuovo e vuoto e ho una preallocazione di spazio nello heap. 
+
+let mut v : Vec<i32> = Vec::new(); // v è un avariabile puntatore che punta ad un tipo Vec.  
+
+creando un vettore, nello stack ho le informazioni di puntatore, size e capacity.  

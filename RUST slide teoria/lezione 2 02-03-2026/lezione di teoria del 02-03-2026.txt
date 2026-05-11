@@ -1,0 +1,102 @@
+FRASE IMPORTANTISSIMA IN RUST
+
+	• valore associato ad una variabile che ne detiene il possesso
+
+	• una sola variabile che possiede il dato --> poichè il dato è posseduto da una e una sola variabile, la variabile DEVE RILASCIARE IL DATO
+
+
+ci sono comportamenti diversi in base al fatto che il dato sta nello stack o nell'heap. 
+
+di default una variabile contiene il dato, ed esso È IMMUTABILE NEL TEMPO
+
+il compilatore riesce a capire il tipo di dato (INFERENZA DEL COMPILATORE = ESSO DEDUCE IL TIPO DI DATO). Una volta assegnato un dato ad una variabile, non è possibile assegnare un altro valore nuovamente alla stessa variabile, a meno che non scriviamo mut davanti. 
+
+
+------------------------------------------------------------------------------------------------
+
+print!() e println!()
+
+queste non sono funzioni come le possiamo immaginare, ma sono delle MACRO
+
+MACRO: è una funzione che genera del codice. Il compilatore genera del codice a partire da quello che c'è scritto dentro la macro print!(). LA MACRO PRODUCE UN CODICE SPECIFICO PER LA CHIAMATA ESEGUITA. 
+
+RUST PERMETTE DI RIDEFINIRE LA STESSA VARIABILE, QUELLA CON LO STESSO NOME E PERMETTE DI CAMBIARNE IL TIPO. QUANDO RIASSEGNIAMO UN VALORE AD UNA VARIABILE, ALLA RIASSEGNAZIONE, LA VARIABILE RIMANE NELL'OMBRA. LO SCOPE DI i CESSA NEL MOMENTO IN CUI ESCO DAL PROGRAMMA. NON C'È MODO DI RECUPERARE LA PRIMA VARIABILE I. SE DENTRO UNA FUNZIONE DEFINISCO UNO SCOPE, RINOMINANDO LE VARIABILE FUORI DALLO SCOPE, QUELLA FUORI DALLO SCOPE VIENE NASCOSTA E NON VIENE DISTRUTTA, OVVEOR RIMANE IN MEMORIA. 
+
+LO SHADOWING PERMETTE DI CAMBIARE TIPO SU UN'ALTRA VARIABILE TOTALMENTE DIFFERENTE. 
+
+Ogni variabile deve essere definita con il suo valore iniziale (slide 11), ad eccezione del fatto che c'è già stata una lettura, prima della prima lettura, da parte del compilatore. --> OGNI VARIABILE NON PUò ESSERE LETTA PRIMA DELLA SUA INIZIALIZZAZIONE. 
+
+------------------------------------------------------------------------------------------------
+
+TIPO UNIT
+
+il tipo unit indica che non c'è un tipo associato. il concetto di unit equivale al concetto di tupla vuota. L'esecuzione dell'istruzione può produrre un valore, e ciò è diverso dal C,  in cui nessun istruzione produce un valore. Il concetto di unit si applica quando l'esecuzione dell'istruzione non produce un valore. 
+nell'esempio nella slide 14 il valore della variabile y dipende dall'esecuzione dell'istruzione if x > 3 { 10 } else {20}
+
+un'istruzione con ; restituisce un valore di ritorno di tipo unit(). le istruzioni senza ; restituiscono un valore che viene ritornato al chiamante 
+
+------------------------------------------------------------------------------------------------
+
+NON È POSSIBILE FARE ASSEGNAZIONI TRANSITIVE IN RUST (SLIDE 15)
+
+isize e usize si adattano in base alla dimensione dell'architettura. 
+
+il char è un tipo che contiene qualunque simbolo Unicode, quindi tutti i char occupano 32 bit. ù
+
+------------------------------------------------------------------------------------------------
+
+PANIC!()
+
+Panic è una situazione che causa un errore importante. Il compilatore analizza il codice sorgente e produce l'eseguibile. In certi casi introduce dei controlli,  che fanno parte del codice generato, e qualora il programma termina con errore esso va in uno stato di panico. Il panico è una condizione di run time: può succedere quindi che un programma in run-time può andare in stato di panico. Il panico è una situazione generata da RUST per garantire sicurezza nel codice. Il panico termina l'esecuzione del programma ma esegue anche operazioni di pulizia e di allocazione della memoria = processo di unwinding che libera le variabili e i parametri delle procedure nello stack. 
+
+slide 21
+nel programma di destra, il compilatore riconosce che si sta per verificare una divisione per zero e segnala un errore di compilazione; invece, nell'esempio di sinistra, il compilatore genera uno stato di panico, perchè non riesce a dedurre la divisione per zero, perchè il valore di b è viene ritornato da una funzione. 
+
+una situazione di panic si può verificare quando una variabile unsigned arriva ad assumere un valore negativo in seguito di certe operazioni. Se in C conta la rappresentazione binaria dei dati, in RUST bisogna sempre rispettare il tipo delle variabili (importante). 
+
+------------------------------------------------------------------------------------------------
+
+Tipo char (slide 23)
+
+------------------------------------------------------------------------------------------------
+
+CONCETTO DI TRATTO
+
+TRATTO: è un modo, un comportamento che permette di definire dei comportamenti che hanno una certa relazione tra di loro e sono pensati per essere adattati ad un certo tipo. L'implementazione del tratto per un tipo devo costruirlo io; devo specificare i metodi che caratterizzano il tratto. Esistono i tratti standard, ma posso definire dei tratti e una volta dichiarato non devo necessariamente implementarlo. 
+
+Un tratto ha uno o più metodi e se voglio implementare un tratto per un tipo devo esplicitare i metodi per quel tipo. 
+
+Il tratto "add" definisce l'operazione che viene fatta con l'operatore "+". Il tratto specifica il modo in cui si verifica una certa operazione per due tipi. 
+
+il tratto drop permette di fare il rilascio della memoria. Alcuni tipi rilasciano automaticamente la memoria e altri tipi che non lo fanno. Ad esempio i32 non gode del tratto drop perchè non occupa una quantità ingente di memoria; è una variabile locale memorizzata nello stack e la sua deallocazione è fatta in modo automatico quando essa esce del suo scope. 
+
+Altri tipi di dati invece prevedono dell'uso dell'HEAP: quindi devo chiamare drop per distruggere lo spazio di memoria che quella variabile ha occupato. 
+
+un tratto lavora sullo stesso tipo: non posso confrontare mele con pere ad esempio. 
+
+------------------------------------------------------------------------------------------------
+
+a slide 28 ci sono tipi standard (rettangoli blu) e i tratti standard (rettangoli bianchi)
+e saranno importanti
+
+Una tupla è un insieme di dati racchiusi tra parantesi graffe. I valori nelle tuple POSSONO AVERE TIPI DIVERSI. Ogni valore nella tupla deve rispettare i tipi nella tupla. È possibile destrutturare una tupla (vedi slide 30). 
+
+------------------------------------------------------------------------------------------------
+
+PUNTATORI E MEMORIA
+
+Riprendiamo il concetto della variabile che possiede il dato. 
+
+let r1 = &v 
+
+leggo l'indirizzo di v e lo copio in r1, quindi r1 contiene un riferimento a v.Il prestito permette di riutilizzare una variabile. Nella terminologia RUST & si legge ref. Un riferimento immutabile permette di leggere la variabile ma non di modificarla. 
+
+borrowChecker : controllo che sto usando il prestito in modo corretto.
+
+ESEMPIO
+
+let mut v= 10;
+
+v può cambiare valore solo se non ci sono prestiti mutabili
+
+ 
