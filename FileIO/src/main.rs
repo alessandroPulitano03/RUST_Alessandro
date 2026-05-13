@@ -181,7 +181,7 @@ fn main() -> std::io::Result<()> {
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 // codice di prova 4 errato
-use std::path::PathBuf;
+/* use std::path::PathBuf;
 use std::File::BufReader; // ricordati BRR, il freddo per ricrodardi BufRead
 
 fn main() {
@@ -206,13 +206,13 @@ fn main() {
     }
 
     // qui vorrei copiare il file generato in un altro percorso con fs::copy
-}
+} */
 // ----------------------------------------------------------------------------------------------------------------------------------------
 // codice di prova 4 funzionante
 
 /* use std::fs; // Necessario per create_dir, write e copy
 use std::fs::File; // Per aprire/creare file
-use std::io::{self, BufRead, BufReader, Write}; // ricordati BRR, il freddo per ricordarti BufRead
+use std::io::{self, BufRead, BufReader}; // ricordati BRR, il freddo per ricordarti BufRead
 use std::path::PathBuf;
 
 fn main() -> io::Result<()> { // Aggiunto il tipo di ritorno per usare il ?
@@ -261,3 +261,116 @@ fn main() -> io::Result<()> { // Aggiunto il tipo di ritorno per usare il ?
 
     Ok(())
 } */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+//slide 26 --> in questo programma proviamo a leggere un file e scrivere due varianti di errore in caso di operazione impossibile
+
+/* use std::io::{ErrorKind, Read};
+use std::fs::File;
+
+fn main() -> std::io::Result<()> {
+    let fp = File::open(r"C:\\Users\\aless\\Documents\\Uni\\Programmazione di Sistema\\slide teoria\\copia_di_filename.txt"); 
+    match fp {
+    Ok(mut file) => {
+        //tento di scrivere il contenuto del file su una stringa
+        let mut contenuto = String::new();
+        match file.read_to_string(&mut contenuto) {
+            Ok(_) => println!("operazione avvenuta con successo."),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => println!("il file non è stato trovato."),
+                ErrorKind::PermissionDenied => println!("non disponi dei permessi necessari."),
+                _ => println!("Impossibile aprire, a causa di : {:?}", e),
+                },
+            }
+        },
+    Err(e) => { 
+        match e.kind() {
+            ErrorKind::NotFound => println!("file non trovato."),
+            ErrorKind::PermissionDenied => println!("non disponi dei permessi."),
+            _=> println!("Impossibile aprire, a causa di : {:?}", e),
+            }  
+        }
+    }
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 26
+/* use std::fs::File;
+use std::io::Read
+
+fn main() -> std::io::Result<()> {
+    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt");
+    match file {
+        Ok(file) => file,
+        Err(error) => {
+            println!("Errore durante l'apertura del file: {}", error);
+            Err(error);
+        }
+    }
+    let mut buffer = [0;10]; // questo è un array memorizzato nello stack.
+    // let result = fs::read // ERRORE : il metodo read discende dal tratto Read
+    let result = file.read(&buffer); // IMPORTANTE : la funzione read carica sul buffer un i byte letti dal file sul vettore
+    // IMPORTANTE: se un carattere ha una dimensione maggiore di 1 byte, allora vengono occupati due elementi del buffer
+    match result {
+        Ok(byte_letti) => {
+            if byte_Letti > 0 {
+                println!("Sono stati letti {} byte", byte_letti);
+                let s = String::from_utf8_lossy(&buffer[..byte_letti]); // la funzione converte in stringa la codifica ASCII contenuta in ogni elemento del buffer, perchè con read ho preso ogni carattere dal file e ho messo la sua codifica binaria ASCII nell'elemento i-esimo del buffer
+                println!("Valori letti : {}", s)
+            } else {
+                println!("fine del file raggiunto.");
+            }
+        }
+        Err(e) => println!("errore nell'apertura del file : {}", e);
+    } 
+    
+    let mut another_buffer = [0;5];
+    let result2 = file.read(&mut another_buffer); // read restituisce un usize nel caso positivo
+    match result2 {
+        Ok(byte_letti2) => {
+            println!("sono stati letti {} byte.", byte_letti2);
+            if byte_letti2 > 0 {
+                let s2 = String::from_utf8_lossy(&another_buffer[..byte_letti2]);
+                println!(" Dati letti : {}", s2);
+            } else {
+                println!("fine del file raggiunto");
+            }
+        }
+        Err(e) => {
+            println!("errore nella seconda lettura del file : {}", e),
+        }
+    }
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 29
+use std::fs::File;
+use std::io::Read;
+
+fn main() -> std::io::Result<()> {
+    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt");
+    match file {
+        Ok(f) => f,
+        Err(e) => {
+            println!("Impossibile aprire il file : {}", e);
+            return Err(e)
+        }
+    };
+
+    let mut buffer = Vec::new(); //utilizzo un vec se poi voglio usare il metodo read_to_end
+    let result = file?.read_to_end(&mut buffer);
+    match result {
+        // IMPORTANTE --> Anche se read_to_end restituisce il numero di byte letti nel file, posso non essere interessato a stamparli e quindi uso Ok(_)
+        Ok(_) => {
+            let s =  String::from_utf8(buffer); //qui non mi serve l'opzione con il lossy in quanto un vec si può espandere o contrarre senza problemi, in quanti i suoi dati stanno nello heap
+            match s {
+                Ok(contenuto) => println!("Il contenuto nel file : {}", contenuto),
+                Err(e) => println!("Errore nella decodifica : {}", e),
+            }
+        }
+    Err(e) => println!("Errore nella lettura del file : {}", e),
+    };
+    Ok(())
+}
