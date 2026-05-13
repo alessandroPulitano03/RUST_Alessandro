@@ -158,6 +158,18 @@ fn main() {
     print_string();
     // print_string(); sarebbe errore perchè la stringa è stata mossa nella closure
 } */
+
+// variante codice slide 34 IMPORTANTE
+/* fn main() {
+    let s1 = String::from("ciao");
+    let print_string = move || {
+        println!("stampa stringa prima: {}", s1);
+    };
+    print_string();
+    print_string();
+    // in questo caso la closure non restituisce il dato, e quindi non lo consuma, ne prende solo possesso
+} */
+
 // ----------------------------------------------------------------------------------------------------
 // slide 34 variazione 
 // poichè in questo codice la closure non restituisce il dato e lo possiede, io posso chiamare la closure quante volte voglio, e ovviamente non posso accedere alla stringa s1. 
@@ -176,16 +188,62 @@ fn main() {
 // slide 36 FUNZIONI DI ORDINE SUPERIORE
 // Per una funzione di ordine superiore devo sempre specificare il tratto funzionale che implementa. 
 
-fn multiply(n1 : i32, function : F) -> i32 
-    where F : Fn(i32) ->i32,
+/* fn multiply(n1 : i32, function : F) -> i32 
+    where F : Fn(i32) ->i32, // qui specifico il tratto funzionale
     {
-        function(n1)
+        function(n1) // n1 è il valore assunto da number quando la closure viene chiamata
     }
 
 
 fn main() {
-    let per_due = |number| {number * 2};
+    let per_due = |number| {number * 2}; // il parmetro scritto tra parentesi viene preso da un input
     let per_tre = |number| {number * 3};
     println!("10 x 2 = {}", multiply(10, per_due));
     println!("20 x 3 = {}", multiply(20, per_due));
+} */
+
+// ----------------------------------------------------------------------------------------------------
+// slide 41
+
+/* fn genera_contatore() -> impl Fn(i32) -> i32 {
+    let contatore = 0;
+    move |incremento : i32| contatore+incremento
+}
+
+
+fn main() {
+    conto = genera_contatore(); // conto è la closure restituita dalla funzione genera contatore
+    println!("Il risultato è: {}", conto(3));
+    println!("Il risultato è: {}", conto(10));
+    println!("Il risultato è: {}", conto(10));
+} */
+
+// ----------------------------------------------------------------------------------------------------
+// slide 42
+/* fn generator(prefix: &str) -> impl FnMut() -> String {
+    let mut i = 0;
+    let b = prefix.to_string();
+    return move || {i+=1; format!("{}{}",b,i)}
+}
+
+fn main() {
+    let mut f = generator("id_");  // la stessa closure viene chiamata 4 volte, per cui il contatore i non viene ridefinito --> la funzione viene eseguita 4 volte con una chiamata
+    for _ in 1..5 {
+        println!("{}",f());
+    }
+} */
+
+
+// ----------------------------------------------------------------------------------------------------
+fn crea_operazione(tipo: &str) -> Box<dyn Fn(i32) -> i32> {
+    match tipo {
+        "raddoppia" => Box::new(|x| x * 2),
+        "quadrato" => Box::new(|x| x * x),
+        _ => Box::new(|x| x),
+    }
+}
+
+fn main() {
+    let op = crea_operazione("quadrato"); // la funzione crea_operazione accetta in input una certa stringa; se la stringa corrisponde ad una certa funzione  allora viene chiamata la closure
+    println!("{}", op(4)); // 16
 }
