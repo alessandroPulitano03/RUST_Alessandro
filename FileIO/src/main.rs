@@ -103,6 +103,25 @@ fn main() -> std::io::Result<()> {
 } */
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 14
+/* use std::fs::File;
+use std::io::prelude::*;
+use std::io::Error;
+fn main() -> Result<(), Error> {
+    // Definisci il percorso del file da aprire
+    let file_path = r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt";
+    // Apri il file in modalità di lettura
+    let  file = File::open(file_path)?;
+    // Leggi il contenuto del file in una stringa
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    // Stampa il contenuto del file
+    println!("Contenuto del file:");
+    println!("{}", contents);
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
 // codice di prova 1
 /* use std::path::PathBuf;
 
@@ -297,33 +316,40 @@ fn main() -> std::io::Result<()> {
 // ----------------------------------------------------------------------------------------------------------------------------------------
 // slide 26
 /* use std::fs::File;
-use std::io::Read
+use std::io::Read; // Mancava il punto e virgola
 
 fn main() -> std::io::Result<()> {
-    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt");
-    match file {
+    // Ho aggiunto 'mut' e l'assegnazione perché il match deve restituire il file alla variabile
+    let mut file = match File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt") {
         Ok(file) => file,
         Err(error) => {
             println!("Errore durante l'apertura del file: {}", error);
-            Err(error);
+            return Err(error); // Bisogna ritornare l'errore per uscire
         }
-    }
+    };
+
     let mut buffer = [0;10]; // questo è un array memorizzato nello stack.
+    
     // let result = fs::read // ERRORE : il metodo read discende dal tratto Read
-    let result = file.read(&buffer); // IMPORTANTE : la funzione read carica sul buffer un i byte letti dal file sul vettore
+    // IMPORTANTE : la funzione read carica sul buffer i byte letti dal file sul vettore
+    // Nota: in Rust è necessario passare il buffer come riferimento mutabile (&mut)
+    let result = file.read(&mut buffer); 
+
     // IMPORTANTE: se un carattere ha una dimensione maggiore di 1 byte, allora vengono occupati due elementi del buffer
     match result {
         Ok(byte_letti) => {
-            if byte_Letti > 0 {
+            if byte_letti > 0 { // Corretto byte_Letti in byte_letti
                 println!("Sono stati letti {} byte", byte_letti);
-                let s = String::from_utf8_lossy(&buffer[..byte_letti]); // la funzione converte in stringa la codifica ASCII contenuta in ogni elemento del buffer, perchè con read ho preso ogni carattere dal file e ho messo la sua codifica binaria ASCII nell'elemento i-esimo del buffer
-                println!("Valori letti : {}", s)
+                // la funzione converte in stringa la codifica ASCII contenuta in ogni elemento del buffer, 
+                // perchè con read ho preso ogni carattere dal file e ho messo la sua codifica binaria ASCII nell'elemento i-esimo del buffer
+                let contenuto = String::from_utf8_lossy(&buffer[..byte_letti]); 
+                println!("Contenuto : {}", contenuto);
             } else {
                 println!("fine del file raggiunto.");
             }
         }
-        Err(e) => println!("errore nell'apertura del file : {}", e);
-    } 
+        Err(e) => println!("errore nell'apertura del file : {}", e),
+    }; 
     
     let mut another_buffer = [0;5];
     let result2 = file.read(&mut another_buffer); // read restituisce un usize nel caso positivo
@@ -338,20 +364,20 @@ fn main() -> std::io::Result<()> {
             }
         }
         Err(e) => {
-            println!("errore nella seconda lettura del file : {}", e),
+            println!("errore nella seconda lettura del file : {}", e);
         }
-    }
+    };
     Ok(())
 } */
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
-// slide 29
-use std::fs::File;
+// slide 29 codice su read_to_end
+/* use std::fs::File;
 use std::io::Read;
 
 fn main() -> std::io::Result<()> {
-    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt");
-    match file {
+    let mut file = match File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\copia_di_filename.txt")
+    {
         Ok(f) => f,
         Err(e) => {
             println!("Impossibile aprire il file : {}", e);
@@ -359,18 +385,309 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let mut buffer = Vec::new(); //utilizzo un vec se poi voglio usare il metodo read_to_end
-    let result = file?.read_to_end(&mut buffer);
+    // definisco un vettore che può espandersi per poter utilizzare read_to_end
+    // 3. Errore: non puoi usare 'file?' dopo aver già gestito l'errore con il match.
+    // 'file' ora è un oggetto File, non un Result.
+    let mut buffer = Vec::new();
+    let result = file.read_to_end(&mut buffer);
+
     match result {
         // IMPORTANTE --> Anche se read_to_end restituisce il numero di byte letti nel file, posso non essere interessato a stamparli e quindi uso Ok(_)
         Ok(_) => {
-            let s =  String::from_utf8(buffer); //qui non mi serve l'opzione con il lossy in quanto un vec si può espandere o contrarre senza problemi, in quanti i suoi dati stanno nello heap
+            //qui i dati stanno nello heap, ma la validità UTF-8 dipende dal contenuto del file, non dalla locazione di memoria.
+            let s = String::from_utf8(buffer); 
             match s {
                 Ok(contenuto) => println!("Il contenuto nel file : {}", contenuto),
                 Err(e) => println!("Errore nella decodifica : {}", e),
             }
         }
-    Err(e) => println!("Errore nella lettura del file : {}", e),
+        Err(e) => println!("Errore nella lettura del file : {}", e),
+    } // Rimosso punto e virgola superfluo dopo il match (opzionale)
+
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 31
+// in questo codice voglio scrivere su un nuovo file e stampare la stringa corrispondente ai primi 30 byte del file. Per farlo bisogna convertire i byte in stringa
+
+/* use std::fs::{self,File};
+use std::io::Read;
+use std::path::PathBuf;
+
+fn main () -> std::io::Result<()> {
+    let mut path1 = PathBuf::from(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria");
+    path1.push("new_file31.txt");
+    let ref_path = path1.as_path();
+    if !ref_path.exists() {
+        let _file = File::create(ref_path);
+        println!("file creato con successo")
+    }
+
+    // se il percorso del file è gia presente posso scrivere direttamente sopra un testo
+    let contenuto = "ciao mamma, guarda come mi diverto con Rust!";
+    fs::write(&path1,contenuto);
+
+    let mut file = File::open(path1)?;
+    let mut buffer = [0;30];
+    // ERRORE IMPORTANTE --> let result = file.read_exact(&mut buffer)?; Qui io sto modificando il contenuto del buffer perchè sto copiando i primi 30 byte del file nel buffer. 
+    let result1 = file.read_exact(&mut buffer); // IMPORTANTE Nel caso in cui l'operazione fatta da read_exact vada a buon fine, la funzione restituisce un Result<()>. Questo vuol dire che nel caso positivo la funzione non restituisce niente, si limita a modificare il buffer. IN caso negativo la funzione restituisce un errore, ovvero Err(e)
+    match result1 {
+        Ok(b) => println!("I byte letti corrispondono a : {:?}. {:?}", String::from_utf8_lossy(&buffer), b), // IMPORTANTE: dato che il tratto Read ha molte funzioni e ci sta non ricordarsi cosa restituisce ciascuna, puoi pensare di scrvere un blocco match in cui tenti di printare il contenuto restituito dalla funzione. 
+        Err(_) => println!("Impossibile"),
+    }
+
+    Ok(())
+
+}
+ */
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 32
+
+
+// voglio leggere un file e stampare la corrispondenza tra ogni carattere e il valore del byte associato
+
+/* use std::fs::File;
+use std::io::Read;
+
+fn main() -> std::io::Result<()>{
+    let mut file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\text.txt")?;
+
+    for byte in file.bytes() {
+        match byte {
+            Ok(b) => println!("Byte : {} {}", b, char::from_u32(b as u32).unwrap()), // mi serve convertire il byte in un u32 se voglio rappresentarlo come char, che in byte sappiamo che possono avere dimensione variabile dagli 1 ai 4 byte
+            Err(_) => println!("Impossibile eseguire la lettura di questo carattere"),
+        };
+    }
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+/* use std::fs::File;
+use std::io;
+use std::io::{Write, BufReader, BufRead};
+
+
+fn main() -> io::Result<()> {
+    let path = "myfile";
+
+    let mut output = File::create(path)?;
+    write!(output, "Rust\n💖\nFun")?;
+
+    let input = File::open(path)?;
+    let buffered = BufReader::new(input); //creo un buffer di dimensione predefinita di 8k che posso scandire riga per riga
+
+    for line in buffered.lines() { // leggo una riga alla volta dell'intero file
+        println!("{}", line?);
+    }
+
+    Ok(())
+} */
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+/* use std::io::{BufReader,BufRead,Result};
+use std::fs::File;
+
+fn main() -> Result<()> {
+    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\text.txt")?;
+
+    // Voglio leggere una riga del file --> uso il metodo read_line
+    let mut buffer = BufReader::new(file);
+
+    let mut contenuto = String::new();
+    buffer.read_line(&mut contenuto)?;
+    println!("{}", contenuto);
+
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 38
+// questo codice legge la prima e la seconda riga di un file
+
+/* use std::fs::File;
+use std::io::{BufReader,BufRead};
+
+fn main() -> std::io::Result<()> {
+    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\text.txt")?;
+
+    let mut buffer = BufReader::with_capacity(1024,file); // il buffer creato con BufReader serve per minimizzare la lettura del file dal disco, perchè carica 1024 byte del file
+
+    let mut contenuto = String::new();
+    buffer.read_line(&mut contenuto);
+    println!("Riga 1 : {:?}", contenuto);
+    contenuto.clear(); // questo metodo dice a Rust di scrivere a partire dall'indice 0 della stringa
+
+    // alla seconda chiamata, la read_line passa alla riga successiva
+    buffer.read_line(&mut contenuto);
+    println!("Riga 2 : {:?}", contenuto);
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 40
+
+/* use std::fs::File;
+use std::io::{self, BufReader, BufRead, Result};
+use std::str;
+
+fn main() -> Result<()> {
+    let file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\lezioni in classe PDS\RUST appunti\lezione del 3 marzo PDS RUST.txt")?;
+
+    let mut reader = BufReader::new(file); // creo un buffer vuoto a partire dal file di testo aperto
+    let mut total_bytes_read = 0;
+
+    loop {
+        let buffer = reader.fill_buf()?;
+        let len = buffer.len();
+
+        if len == 0 {
+            break; // Fine del file
+        }
+
+        // Processa il buffer qui.
+        // In questo esempio, lo stampiamo a blocchi.
+        match str::from_utf8(buffer) {
+            Ok(s) => print!("{}", s),
+            Err(_) => {
+                eprintln!("Warning: Invalid UTF-8 encountered in buffer.");
+             }
+        }
+        // Indica al BufReader quanti byte abbiamo letto (in questo caso, l'intero buffer).
+        reader.consume(len);
+        total_bytes_read += len;
+
+    }
+    println!("\nLettura completata. Totale byte letti: {}", total_bytes_read);
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 42
+// in questo codice voglio scrivere 5 volte Hello world su un file appena creato
+
+/* se std::fs::File;
+use std::io::{self,Write};
+
+fn main() -> io::Result<()> {
+    let mut file = File::create(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\text1.txt")?;
+
+    let iterazioni = 5;
+    let contenuto = b"Hello world!\n"; // scrivere b davanti ad un literal string trasforma la stringa in un array di byte in cui ogni elemento è la conversione ASCII di ciascuna lettera della stringa
+    let mut total_byte = 0;
+    for _ in 0..=iterazioni {
+        match file.write(contenuto) { // il metodo write restituisc un Result che contiene nel ramo positivo il numero di byte scritti; nel ramo negativo un errore
+            Ok(bytes_written) => {total_byte += bytes_written;},
+            Err(e) => println!("Errore durante la scrittura : {}", e),
+        }
+    }
+    println!("totale dei byte : {}", total_byte);
+    Ok(())
+} */
+ 
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 43
+// in questo codice voglio scrivere 5 volte Hello world su un file appena creato
+
+/* use std::fs::File;
+use std::io::Write;
+
+fn main() -> std::io::Result<()> {
+    let mut file = File::open(r"C:\Users\aless\Documents\Uni\Programmazione di Sistema\slide teoria\text1.txt")?;
+    let data = b"Hello world";
+    
+    // scrivo tutto il vettore nel file
+    file.write_all(data)?;
+
+    match file.flush() {
+        Ok(b) => println!("sono statti scritti i dati sul disco. Numero byte : {}", b),
+        Err(err) => {
+            eprintln!("Errore durante il flushing dei dati nel file: {}", err);
+            return Err(err);
+        }
+    }
+    Ok(())
+} */
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// le slide da 44 a 48 il prof le reputa inutili, non le studio
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 49
+
+use std::io::{self,Cursor,Read,Seek};
+
+fn main() -> io::Result<()> {
+    // Creo un buffer in memoria che simula un file, in questo caso un stringa rappresentata in byte
+    let data = b"Hello world".to_vec();
+    // Racchiudo il dato in un Cursor
+    let mut cursor = Cursor::new(data);
+
+    let mut buffer = [0;5];
+    let byte_letti = match cursor.read(&mut buffer) {
+            Ok(b) => {
+            // in questo caso i dati sono stati scritti come ASCII puro, quindi UTF-8 valido. Quindi non occorre scrivere String::from_utf8_lossy  
+            let contenuto_testo = str::from_utf8(&buffer[..b]);
+            println!("byte letti : {}. Contenuto originale : {:?}",b,contenuto_testo);
+            b // IMPORTANTE --> scrivendo così assegno il valore del contenitore restituito dalla read alla variabile byte_letti
+        },
+        Err(e) => {
+            eprintln!("errore nella lettura : {}", e);
+            return Err(e);
+        }
     };
+
+    let current_position = cursor.stream_position()?;
+    println!("Posizione corrente del cursore : {}", current_position);
+
+    cursor.rewind()?;
+    println!("Cuesore riavvolto all'inizio.");
+
+
+    let mut buffer_again = [0; 5]; // Leggi di nuovo dall'inizio
+
+    let bytes_read_again = cursor.read(&mut buffer_again)?;
+    println!("Letti di nuovo {} bytes: {:?}", bytes_read_again, str::from_utf8(&buffer_again[..bytes_read_again]));
+
+    Ok(())
+
+
+}
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// slide 56
+
+use serde::{Serialize, Deserialize};
+use std::fs::File;
+use std::io::Write;
+// Definiamo una struttura dati per i nostri dati JSON.
+#[derive(Debug, Serialize, Deserialize)]
+struct Persona {
+    nome: String,
+    cognome: String,
+    eta: u32,
+}
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let persona1 = Persona {
+        nome: "Mario".to_string(),
+        cognome: "Rossi".to_string(),
+        eta: 30,
+    };
+    let persona2 = Persona {
+        nome: "Luigi".to_string(),
+        cognome: "Bianchi".to_string(),
+        eta: 25,
+    };
+    let persone = vec![persona1, persona2];
+
+    // Serializziamo il vettore in formato JSON.
+    let json_data = serde_json::to_string(&persone)?;
+    // let json_data = serde_json::to_string_pretty(&persone)?;
+    let mut file = File::create("persone.json")?; // Scriviamo il JSON su un file.
+    file.write_all(json_data.as_bytes())?;
     Ok(())
 }
