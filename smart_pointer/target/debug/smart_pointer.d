@@ -1,1 +1,1 @@
-C:\Users\aless\Documents\Uni\Programmazione\ di\ Sistema\RUST\smart_pointer\target\debug\smart_pointer.exe: C:\Users\aless\Documents\Uni\Programmazione\ di\ Sistema\RUST\smart_pointer\src\main.rs
+/Users/alessandro/Desktop/PDS\ /progetti\ RUST/RUST_Alessandro/smart_pointer/target/debug/smart_pointer: /Users/alessandro/Desktop/PDS\ /progetti\ RUST/RUST_Alessandro/smart_pointer/src/main.rs
