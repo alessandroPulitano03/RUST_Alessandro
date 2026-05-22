@@ -523,9 +523,53 @@ fn main() {
 
 
 
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// slide 89
+// IMPORTANTE : se voglio passare come parametro di input un Box, a differenza delle variabili normali, devo specificare la notazione self: Box<Self>. La stessa cosa vale per gli Rc, sostituendo Box con Rc
 
-        
-        
+/* struct Task {
+    name : String,
+}
+impl Task {
+    // in questo caso la scritta Self dentro il Box fa riferimento a ciò che stai implementando, in questo caso la struct Task
+    fn complete(self: Box<Self>) {
+        println!("Task '{}' completed and dropped.", self.name);
+        // self viene consumato
+    }
+}
 
+fn main() {
+    let task = Box::new(Task{name : String::from("Studio Rust") });
+    task.complete();
+} */
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// slide 91 
+// stmpa di una catena di nodi di una lista concatenata
+use std::rc::Rc;
+
+struct Node {
+    value : i32,
+    next : Option<Rc<Node>>,
+}
+        
+impl Node{
+    fn print_chain(self: Rc<Self>) {
+        let mut current = Some(self);
+        while let Some(node) = current {
+            println!("{}", node.value);
+            current = node.next.clone();
+        }
+    }
+}
+
+fn main() {
+    let third = Rc::new(Node {value: 3, next: None });
+    let second = Rc::new(Node {value : 2, next : Some(thid) });
+    let first = Rc::new(Node {value : 1, next : Some(second) });
+
+    first.print_chain();
+}
 
 
