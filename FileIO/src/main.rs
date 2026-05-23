@@ -619,7 +619,7 @@ fn main() -> std::io::Result<()> {
 // ----------------------------------------------------------------------------------------------------------------------------------------
 // slide 49
 
-use std::io::{self,Cursor,Read,Seek};
+/* use std::io::{self,Cursor,Read,Seek};
 
 fn main() -> io::Result<()> {
     // Creo un buffer in memoria che simula un file, in questo caso un stringa rappresentata in byte
@@ -656,7 +656,7 @@ fn main() -> io::Result<()> {
     Ok(())
 
 
-}
+} */
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 // slide 56
