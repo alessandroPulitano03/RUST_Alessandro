@@ -1,0 +1,1 @@
+C:\Users\aless\Documents\Uni\Programmazione\ di\ Sistema\RUST\thread_concorrenza\target\debug\thread_concorrenza.exe: C:\Users\aless\Documents\Uni\Programmazione\ di\ Sistema\RUST\thread_concorrenza\src\main.rs
