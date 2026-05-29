@@ -32,7 +32,7 @@
 // slide 77
 
 
-use std::sync::{Arc, Mutex};
+/* use std::sync::{Arc, Mutex};
 use std::thread;
 
 fn main() {
@@ -51,7 +51,7 @@ fn main() {
 
     //v contiene i numeri da 1 a 9
     println!("\nResult: {:?}", *(shared_data.lock().unwrap()));
-}
+} */
 
 // No, con std::thread::spawn non puoi passare shared_data per riferimento se è una variabile locale del main.
 
@@ -59,7 +59,7 @@ fn main() {
 
 // La soluzione corretta con spawn è clonare l’Arc dentro il ciclo:
 
-use std::sync::{Arc, Mutex};
+/* use std::sync::{Arc, Mutex};
 use std::thread;
 
 fn main() {
@@ -80,4 +80,34 @@ fn main() {
     }
 
     println!("\nResult: {:?}", *shared_data.lock().unwrap());
-}
+} */
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+// slide 80
+
+/* use std::sync::{Arc,Mutex};
+use std::thread;
+
+fn main() {
+    let data = Arc::new(Mutex::new(0));
+    let cloned_data = Arc::clone(&data);
+    let thread = thread::spawn(move|| {
+        let mut num = cloned_data.lock().unwrap();
+        *num += 1;
+        panic!("Il thread ha avvelenato il mutex.") 
+    });
+    let wait_join = thread.join();
+    let result = data.lock(); //qui accedo al MutexGuard
+    // IMPORTANTE: anche se il thread secondario ha modificato la variabile clonata, la risorsa è pur sempre puntata da due puntatori SULLA STESSA RISORSA
+    match result {
+        Ok(guard) =>  {println!("Mutex non avvelenato. Valore : {}", *guard);}
+        Err(poisoned) => {
+            // step 1) Accedo all'involucro del dato nel mutex utilizzando .into_inner() su poisoned 
+            // IMPORTANTE : il metodo .into_inner() applicato a poisoned mi permette di estrarre l'involucro della risorsa nel ramo negativo, a cui posso sempre  accedere usando l'asterisco perchè gode del tratto Deref
+            let mut guard = poisoned.into_inner();
+            println!("Mutex avvelenato. Valore recuperato : {}", *guard);
+            *guard += 1;
+            println!("Stato del mutex resettato. Nuovo valore : {}", *guard); 
+        }
+    }
+} */
