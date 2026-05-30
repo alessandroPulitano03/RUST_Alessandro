@@ -113,4 +113,136 @@ fn main() {
 } */
 
 // ------------------------------------------------------------------------------------------------------------------------------------
-// slide 8
+// slide 83
+// creo un Arc per permettere la condivisione della risorsa tra più thread
+// creo un RWLock per incapsulare una risorsa per thread specificatamente in lettura e/o scrittura
+
+
+/* use std::sync::{Arc,RwLock};
+use std::thread;
+
+fn main() {
+    let data = Arc::new(RwLock::new(vec![1,2,3,4,5]));
+
+    let cloned_data1 = Arc::clone(&data);
+    let cloned_data2 = Arc::clone(&data);
+
+    // step 1) creo un thread passando con movimento la variabile clonata
+    let reader_thread = thread::spawn(move|| {
+        // step 2) accedo in lettura all'RWLock con .read() e spacchetto il lucchetto con .unwrap()
+        let guard = cloned_data1.read().unwrap();
+        // step 3) stampo la lettura del thread lettore
+        println!("Lettura dal thread lettore : {:?}", guard); // ERRORE : in questo caso non serve mettere *guard, perchè il metodo .read() va direttamente sul dato contenuto nell'RWLock
+    });
+    // WORKFLOW PER SCRVERE IL THREAD SCRITTORE
+    let writer_thread = thread::spawn(move|| {
+        // step 1) accedo in scrittura all'RWLock e spacchetto il risultato con .unwrap()
+        let mut guard = cloned_data2.write().unwrap();
+        // step 2) modifico la risorsa
+        guard.push(6);
+        // step 3) stampo la risorsa modificata
+        println!("Scrittura effettuata dal thread scrittore : {:?}", guard);
+    });
+
+    reader_thread.join().unwrap();
+    writer_thread.join().unwrap();
+
+} */
+
+// riepilogo step
+// step 0) incapsulo una risorsa in un lucchetto RWLock a sua volta contenuto in un Arc. L'RWLock mi permette di accedere in lettura e/o in scrittura alla risorsa tramite il metodo .read() e .write(). L'Arc permette di passare la risorsa tra più thread
+// step 1) creo un thread lettore a cui passo CON MOVIMENTO (move) un clone della variabile Arc originale
+// step 2) accedo in lettura alla risorsa richiamando .read() per leggere e .unwrap() per aprire il lucchetto
+// step 3) stampo la risorsa letta dal thread
+// ripeto un il workflow in maniera analoga per il thread scrittore
+// step finale) nel thread princiapale attendo la terminazione dei due thread utilizzando .join().unwrap()
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+// slide 85
+
+/* use std::sync::{Arc,RwLock};
+use std::thread;
+use std::time::Duration;
+
+fn main(){
+    //se voglio creare un thread e fargli elaborare delle risorse, creo prima una risorsa e la proteggo da un RWLock, che a sua volta sta dentro un Arc per peermettere di passare la risorsa tra più thread
+    let data = Arc::new(RwLock::new(vec![1,2,3]));
+
+    // creo due cloni del dato perchè voglio avere un thread lettore e un thread scrittore
+    let cloned_data1 = Arc::clone(&data);
+    let cloned_data2 = Arc::clone(&data);
+
+    let thread_reader = thread::spawn(move|| {
+        // In questo esercizio vogliamo forzare uno stato di panico: faccio attendere il thread lettore in modo che l'esecuzione del thread scrittore inizi prima. In questo esempio, il thread scrittore simula un panico, e poichè IL PANICO È SCATENATO SULLA STESSA RISORSA A CUI IL LETTORE VUOLE ACCEDERE, anche il thread lettore entra nel ramo ERR
+        thread::sleep(Duration::from_secs(1));
+        let guard = cloned_data1.read();
+        match guard {
+            Ok(value) => {println!("Il thread lettore accede alla risorsa in lettura : {:?} ", value)},
+            Err(poisoned) => {println!("Il thread lettore accede ad una risorsa avvelenata : {:?}", poisoned.into_inner());}
+        }
+        });
+
+    let thread_writer = thread::spawn(move|| {
+        let mut guard = cloned_data2.write().unwrap();
+        guard.push(4);
+        panic!("Attenzione, il thread scrittore ha commesso un errore nell'esecuzione");
+    });
+
+    thread_reader.join().unwrap_err();
+    thread_writer.join().unwrap_err();
+} */
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+// slide 92
+
+
+/* use std::sync::{Arc,Mutex, atomic::AtomicBool, atomic::Ordering::{Release,Acquire}};
+use std::thread;
+
+fn main() {
+    // step 0) definisco la risorsa dentro un lucchetto che rendo Arc (atomic RC) per poterla rendere condivisibile tra thread; e definisco una variabile atomica per sincronizzare i thread
+    let data = Arc::new(Mutex::new(vec![1,2,3,4]));
+    let boolean_variable = Arc::new(AtomicBool::new(false));
+
+
+    // creo due cloni del dato per passarli con movimento rispettivamente al thread produttore e al thread consumatore
+    let cloned_data1 = Arc::clone(&data);
+    let cloned_data2 = Arc::clone(&data);
+
+    // IMPORTANTE: clono la variabile atomica
+    let cloned_boolean_variable = Arc::clone(&boolean_variable);
+
+    // creo il thread produttore a cui passo con possesso il dato
+    let thread_producer = thread::spawn(move|| {
+        for i in 0..10 {
+            let mut guard = cloned_data1.lock().unwrap();
+            guard.push(i);
+            println!("Nuovo valore aggiunto nella risorsa: {:?}", *guard);
+        }
+        /* boolean_variable.store(true, Release); */ // ERRORE IMPORTANTE : La cosa sbagliata di questa istruzione è che stai lavorando sulla variabile booleana atomica originale senza aver creato un clone. Ogni volta che da un thread vuoi accedere ad una risorsa generata nel thread principale, devi prima clonare la risorsa nel thread principale mettendola in un Arc
+        cloned_boolean_variable.store(true, Release);
+    });
+
+    let thread_consumer = thread::spawn(move|| {
+        loop{
+            // in questo thread consumer voglio creare un loop che continua a rimuovere valori dalla risorsa fino a che non viene avvisato che il produttore ha finito; questo avviene acquisendo la variabile atomica booleana con il metodo .load()
+            let mut guard = cloned_data2.lock().unwrap();
+            let length = guard.len();
+            if length > 0 {
+                let value = guard.remove(0);
+                println!("Valore rimosso : {}", value);
+            } else if boolean_variable.load(Acquire) {
+                break;
+        }
+    }
+    println!("Il thread ha consumato tutti gli elementi")
+    });
+    thread_producer.join().unwrap();
+    thread_consumer.join().unwrap();
+ 
+} */
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+// slide 92
+
