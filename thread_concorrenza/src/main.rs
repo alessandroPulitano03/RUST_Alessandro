@@ -246,3 +246,132 @@ fn main() {
 // ------------------------------------------------------------------------------------------------------------------------------------
 // slide 92
 
+/* fn main() {
+    // step 0) creo una tupla (mutex,condition variable) e clono per poterla passare al thread attivo
+    let pair = (Mutex::new(false), Condvar::new()); 
+    let pair2 = Arc::clone(&pair);
+    
+    // step 1) creo un thread attivo --> attivo significa che modifica la variabile booleana e manda la notifica DOPO CHE IL THREAD PASSIVO È ANDATO IN SLEEP
+    let active_thread = thread::new(move|| {
+        // step 2) destrutturo la tupla richiamando la notazione &*
+        let (mutex,cond) = &*pair2;
+        // step 3) faccio si che il thread attivo prenoti la risorsa affinchè ci possa lavorare
+        let mut guard = mutex.lock().unwrap();
+        // step 4) mando il thread in sleep solo per simulare il compimento di una certa task
+        thread::sleep(Duration::from_secs(5));
+        // step 5) una volt terminato, il thread attivo setta a true il booleano. Solo dopo aver settato a ture il booleano posso mandare la notifica al thread passivo di una notifica per mezzo della condition variable
+        *guard = true;
+        cond.notify_one();
+    });
+
+    // nel thread principale devo sempre spacchettare la tupla, perchè devo accedere al risultato aggiornato dal thread attivo
+    let (mutex,cvar) = &*pair;
+    let guard = mutex.lock().unwrap();
+
+    println!("waiting");
+    cvar.wait(guard).unwrap()
+}
+ */
+ // ------------------------------------------------------------------------------------------------------------------------------------
+// una variabile di tipo ConditionVariable può utilizzare tre metodi per attendere il completamento del task da parte del thread attivo
+// 1) .wait(guard :MutexGuard) -> LockResult<MutexGuard<T>>
+// 2) .wait_while()
+// 3) .wait_timeout() per le attese temporarizzate
+// ------------------------------------------------------------------------------------------------------------------------
+// esercizio slide 119
+
+// l'idea dell'esercizio è di mettere i dati a cui i thread accedono dentro un Mutex
+// Poichè in questo esempio i thread modificano un vettore e un booleano, metto i due valori in una struct, che a sua volta inglobo nel Mutex
+struct SharedData {
+    buffer:  Vec<i32>,
+    finished : bool
+}
+
+// dato che il mutex protegge due variabili, mi serve un'altra struct che lega il Mutex ad una ConditionVariable
+struct SharedController {
+    data: Mutex<SharedData>,
+    cv: Condvar,
+}
+
+impl SharedController {
+    pub fn new() -> Self {
+        SharedController {
+            data : Mutex::new(SharedData  {
+                buffer : Vec::new(),
+                finished : false,
+            })
+            cv : Condvar::new(),
+        }
+    }
+
+    pub fn produce(&self) {
+        for i in 0..10 {
+            // Simuliamo un tempo di calcolo per produrre il dato
+            thread::sleep(Duration::from_millis(200));
+
+            // acquisisco il lock per modificare il buffer e stampo il valore inserito
+            let mut shared = self.data.lock().unwrap();
+            shared.buffer.push(i);
+            println!("[Produttore] : Ho inserito il valore : {}", i);
+
+            // Avviso i consumatori che c'è un nuovo dato
+            self.cv.notify_all();
+        }
+
+        // segnalo il termine della produzione
+        let mut shared = self.data.lock().unwrap();
+        shared.finished = true;
+        self.cv.notify_all();
+        println!("[Produttore] : Produzione terminata.")
+    }
+
+    pub fn consume(&self, consumer_id : usize) -> Self {
+        loop {
+            // Prendiamo il lock sul Mutex
+            let mut shared = self.data.lock().unwrap();
+
+            // utilizzo wait_while che fa dormire il thread se il buffer è vuoto e la produzione non è finita
+            shared = self.cv.wait_while(
+                shared,
+                |state| { state.buffer.is_empty() && !state.finished }
+            ).unwrap();
+
+            // Se il buffer è vuoto e la produzione è finita, usciamo dal ciclo (lavoro completato)
+            if state.finished &&  state.buffer.is_empty() {
+                break;
+            }
+
+            if let Some(value) = state.buffer.pop() {
+                println!("[Consumatore {}] Ho rimosso e letto il valore: {}", consumer_id, value);
+            }
+        }
+        println!("[Consumatore {}] Ho finito e mi spengo.", consumer_id);
+
+
+    }
+}
+
+
+fn main() {
+    let shared_controller = Arc::new(SharedController::new());
+
+    let mut handles = vec![];
+
+    // clono lo shared controller e creo il produttore
+    let producer_clone = Arc::clone(&shared_controller);
+    handles.push(thread::spawn(
+        // nota che utilizzi la funzione produce sulla struct che contiene le risorse che vuoi elaborare
+        move || { producer_clone.produce();}
+    ));
+    let cloned_data_consumer2 = Arc::clone(&cloned_data_producer1);
+
+
+    // creo due thread consumer con i rispettivi id per distinguirli
+    for id in 1..=2 {
+        let cloned_data_consumer2 = Arc::clone(&shared_controller);
+        handles.push(thread::spawn ( 
+           move || {let cloned_data_consumer2 = Arc::clone(&shared_controller);
+}
+        ))
+    }
+}
