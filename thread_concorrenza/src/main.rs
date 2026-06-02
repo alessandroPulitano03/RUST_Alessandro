@@ -279,8 +279,10 @@ fn main() {
 // 3) .wait_timeout() per le attese temporarizzate
 // ------------------------------------------------------------------------------------------------------------------------
 // esercizio slide 119
-
-// l'idea dell'esercizio è di mettere i dati a cui i thread accedono dentro un Mutex
+/* use std::sync::{Arc, Mutex, Condvar};
+use std::thread;
+use std::time::Duration;
+// l'idea dell'esercizio è di mettere i dati a cui i thread accedono dentro un Mutex.
 // Poichè in questo esempio i thread modificano un vettore e un booleano, metto i due valori in una struct, che a sua volta inglobo nel Mutex
 struct SharedData {
     buffer:  Vec<i32>,
@@ -289,6 +291,7 @@ struct SharedData {
 
 // dato che il mutex protegge due variabili, mi serve un'altra struct che lega il Mutex ad una ConditionVariable
 struct SharedController {
+    // inglobo la struct che contiene le risorse dentro un Mutex
     data: Mutex<SharedData>,
     cv: Condvar,
 }
@@ -299,7 +302,7 @@ impl SharedController {
             data : Mutex::new(SharedData  {
                 buffer : Vec::new(),
                 finished : false,
-            })
+            }),
             cv : Condvar::new(),
         }
     }
@@ -325,7 +328,7 @@ impl SharedController {
         println!("[Produttore] : Produzione terminata.")
     }
 
-    pub fn consume(&self, consumer_id : usize) -> Self {
+    pub fn consume(&self, consumer_id : usize) {
         loop {
             // Prendiamo il lock sul Mutex
             let mut shared = self.data.lock().unwrap();
@@ -333,15 +336,16 @@ impl SharedController {
             // utilizzo wait_while che fa dormire il thread se il buffer è vuoto e la produzione non è finita
             shared = self.cv.wait_while(
                 shared,
+                // IMPORTANTE : il secondo parametro della funzione è il contenuto del mutex. 
                 |state| { state.buffer.is_empty() && !state.finished }
             ).unwrap();
 
             // Se il buffer è vuoto e la produzione è finita, usciamo dal ciclo (lavoro completato)
-            if state.finished &&  state.buffer.is_empty() {
+            if shared.finished && shared.buffer.is_empty() {
                 break;
             }
 
-            if let Some(value) = state.buffer.pop() {
+            if let Some(value) = shared.buffer.pop() {
                 println!("[Consumatore {}] Ho rimosso e letto il valore: {}", consumer_id, value);
             }
         }
@@ -363,15 +367,20 @@ fn main() {
         // nota che utilizzi la funzione produce sulla struct che contiene le risorse che vuoi elaborare
         move || { producer_clone.produce();}
     ));
-    let cloned_data_consumer2 = Arc::clone(&cloned_data_producer1);
 
-
+    let cloned_data_consumer2 = Arc::clone(&shared_controller);
     // creo due thread consumer con i rispettivi id per distinguirli
     for id in 1..=2 {
-        let cloned_data_consumer2 = Arc::clone(&shared_controller);
+        let cloned_data_consumer2 = Arc::clone(&cloned_data_consumer2);
         handles.push(thread::spawn ( 
-           move || {let cloned_data_consumer2 = Arc::clone(&shared_controller);
-}
-        ))
+           move || {cloned_data_consumer2.consume(id);}
+        ));
     }
-}
+    for handle in handles {
+        handle.join().expect("Errore durante la join del thread");
+    }
+
+    println!("[Main] Tutto il sistema ha terminato correttamente.");
+} */
+
+
